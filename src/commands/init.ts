@@ -2,16 +2,18 @@ import { existsSync, readFileSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import chalk from 'chalk';
 import ora from 'ora';
-import { confirm } from '@inquirer/prompts';
+import { confirm, select } from '@inquirer/prompts';
 import {
   configExists,
   saveConfig,
   defaultConfig,
   type SyncConfig,
+  type DockerConfig,
 } from '../core/config.js';
 import { scanEnvFiles } from '../core/env.js';
 import { detectFromEnv, resolveCredentials } from '../core/credentials.js';
 import { testConnection, isPooledUrl, checkPrerequisites } from '../db/connection.js';
+import { ensureLocalDb, findFreePort, connectionUrl } from '../docker/local-db.js';
 import { header, success, warn, error, info, sectionTitle, tableRow } from '../ui/format.js';
 import { confirmAction } from '../ui/prompts.js';
 
@@ -132,14 +134,46 @@ export async function initCommand(): Promise<void> {
   });
   console.log('');
 
-  // 6. Optionally resolve local credentials
+  // 6. Set up local database
   let hasLocal = false;
-  const wantsLocal = await confirm({
-    message: 'Do you have a local database URL to configure now?',
-    default: false,
+  let dockerConfig: DockerConfig | undefined;
+
+  const localChoice = await select({
+    message: 'How would you like to set up your local database?',
+    choices: [
+      { name: 'Create a Docker-managed database (recommended)', value: 'docker' as const },
+      { name: 'Use an existing database (provide URL)', value: 'existing' as const },
+      { name: 'Skip for now', value: 'skip' as const },
+    ],
   });
 
-  if (wantsLocal) {
+  if (localChoice === 'docker') {
+    if (!prereqs.dockerAvailable) {
+      console.log(error('Docker is not available. Install Docker first: https://docker.com'));
+    } else {
+      const port = await findFreePort();
+      const containerName = `supabase-sync-pg-${Date.now()}`;
+      const volumeName = `${containerName}-data`;
+
+      dockerConfig = {
+        managed: true,
+        containerName,
+        volumeName,
+        port,
+      };
+
+      const spinner = ora('Starting local database...').start();
+      try {
+        const url = await ensureLocalDb(dockerConfig);
+        resolved.local = { databaseUrl: url };
+        hasLocal = true;
+        spinner.succeed(chalk.green(`Local database running on port ${port}`));
+      } catch (err) {
+        spinner.fail(chalk.red('Failed to start local database'));
+        console.log(info(String(err)));
+      }
+    }
+  } else if (localChoice === 'existing') {
     const localResolved = await resolveCredentials({
       requireCloud: false,
       requireLocal: true,
@@ -186,6 +220,7 @@ export async function initCommand(): Promise<void> {
     ...defaultConfig(),
     cloud: resolved.cloud,
     local: resolved.local,
+    docker: dockerConfig,
   };
 
   saveConfig(config);
