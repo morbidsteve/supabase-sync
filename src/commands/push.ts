@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import { configExists, loadConfig, saveConfig, type SyncConfig } from '../core/config.js';
+import { ensureLocalDb } from '../docker/local-db.js';
 import { testConnection, isPooledUrl } from '../db/connection.js';
 import { getTableCounts, type TableInfo } from '../db/discovery.js';
 import { dumpDatabase } from '../db/dump.js';
@@ -35,13 +36,29 @@ export async function pushCommand(options?: { yes?: boolean }): Promise<void> {
 
   const config = loadConfig();
 
-  // 2. Local DB check — need local credentials for push source
+  // 2. Auto-start Docker-managed local DB if configured
+  if (config.docker?.managed) {
+    const dbSpinner = ora('Starting local database...').start();
+    try {
+      const url = await ensureLocalDb(config.docker);
+      config.local = { databaseUrl: url };
+      dbSpinner.succeed(chalk.green('Local database running'));
+    } catch (err) {
+      dbSpinner.fail(chalk.red('Failed to start local database'));
+      console.log(info(String(err)));
+      console.log('');
+      return;
+    }
+  }
+
+  // 3. Local DB check — need local credentials for push source
   if (!config.local) {
     console.log(header('Supabase Sync — Push'));
     console.log('');
     console.log(error('Local database is not configured.'));
     console.log(info('A local database is required as the push source.'));
-    console.log(info('Run `supabase-sync settings` to configure local credentials.'));
+    console.log(info('Run `supabase-sync init` to set up a Docker-managed database,'));
+    console.log(info('or `supabase-sync settings` to configure an existing database.'));
     console.log('');
     return;
   }
