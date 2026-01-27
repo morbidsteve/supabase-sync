@@ -8,6 +8,7 @@ import { dumpDatabase } from '../db/dump.js';
 import { restoreDatabase } from '../db/restore.js';
 import { getS3StorageSummary } from '../storage/s3.js';
 import { pushStorage } from '../storage/sync.js';
+import { ensurePoolerUrl } from '../core/supabase-url.js';
 import { header, success, warn, error, info, sectionTitle, tableRow } from '../ui/format.js';
 import { confirmDestructive } from '../ui/prompts.js';
 
@@ -51,7 +52,12 @@ export async function pushCommand(options?: { yes?: boolean; projectId?: string 
     }
   }
 
-  // 3. Local DB check — need local credentials for push source
+  // 3a. Auto-convert Supabase direct URLs to pooler URLs if region is known
+  if (config.cloud?.region) {
+    config.cloud.databaseUrl = ensurePoolerUrl(config.cloud.databaseUrl, config.cloud.region);
+  }
+
+  // 3b. Local DB check — need local credentials for push source
   if (!config.local) {
     console.log(header('Supabase Sync — Push'));
     console.log('');

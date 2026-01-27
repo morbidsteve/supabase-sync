@@ -8,6 +8,7 @@ import { dumpDatabase } from '../db/dump.js';
 import { restoreDatabase } from '../db/restore.js';
 import { getSupabaseStorageSummary } from '../storage/supabase.js';
 import { pullStorage } from '../storage/sync.js';
+import { ensurePoolerUrl } from '../core/supabase-url.js';
 import { header, success, warn, error, info, sectionTitle, tableRow } from '../ui/format.js';
 import { confirmAction } from '../ui/prompts.js';
 
@@ -36,7 +37,12 @@ export async function pullCommand(options?: { yes?: boolean; projectId?: string 
 
   const config = loadConfig();
 
-  // 2. Cloud credential check
+  // 2. Auto-convert Supabase direct URLs to pooler URLs if region is known
+  if (config.cloud?.region) {
+    config.cloud.databaseUrl = ensurePoolerUrl(config.cloud.databaseUrl, config.cloud.region);
+  }
+
+  // 3. Cloud credential check
   if (!config.cloud) {
     console.log(header('Supabase Sync — Pull'));
     console.log('');

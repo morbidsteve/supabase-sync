@@ -1,6 +1,7 @@
 import { execa, type Result } from 'execa';
 import { dirname, basename } from 'path';
 import { isDockerAvailable, resolveHostForDocker, getDockerNetworkArgs } from './docker-check.js';
+import { isSupabaseDirectUrl } from '../core/supabase-url.js';
 
 const DOCKER_IMAGE = 'postgres:16-alpine';
 
@@ -129,6 +130,7 @@ interface DockerArgs {
  *  - Rewrite the connection URL for Docker networking
  *  - Mount host directories for --file arguments
  *  - Determine --network flags
+ *  - Warn if a Supabase direct URL is used (IPv6-only, Docker can't reach it)
  */
 function prepareDockerArgs(args: string[]): DockerArgs {
   const rewrittenArgs = [...args];
@@ -139,6 +141,15 @@ function prepareDockerArgs(args: string[]): DockerArgs {
     a => a.startsWith('postgres://') || a.startsWith('postgresql://'),
   );
   const originalUrl = urlIndex !== -1 ? rewrittenArgs[urlIndex] : '';
+
+  // Warn about Supabase direct URLs — these are IPv6-only and Docker can't reach them.
+  // The init command should have converted these to pooler URLs, but warn just in case.
+  if (urlIndex !== -1 && isSupabaseDirectUrl(rewrittenArgs[urlIndex])) {
+    console.error(
+      '\x1b[33m[warn]\x1b[0m Supabase direct URL detected (db.xxx.supabase.co). ' +
+      'These use IPv6 which Docker cannot reach. Run `supabase-sync init` to reconfigure with the pooler URL.',
+    );
+  }
 
   if (urlIndex !== -1) {
     rewrittenArgs[urlIndex] = resolveHostForDocker(rewrittenArgs[urlIndex]);

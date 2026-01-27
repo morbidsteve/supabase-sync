@@ -5,6 +5,7 @@ import { configExists, loadConfig } from '../core/config.js';
 import { getTableCounts, type TableInfo } from '../db/discovery.js';
 import { getSupabaseStorageSummary, type StorageSummary } from '../storage/supabase.js';
 import { getS3StorageSummary } from '../storage/s3.js';
+import { ensurePoolerUrl } from '../core/supabase-url.js';
 import { header, success, warn, error, info, sectionTitle, tableRow } from '../ui/format.js';
 
 /**
@@ -71,6 +72,11 @@ export async function previewCommand(options?: { projectId?: string }): Promise<
   }
 
   const config = loadConfig();
+
+  // Auto-convert Supabase direct URLs to pooler URLs if region is known
+  if (config.cloud?.region) {
+    config.cloud.databaseUrl = ensurePoolerUrl(config.cloud.databaseUrl, config.cloud.region);
+  }
 
   // 2. Need at least cloud credentials
   if (!config.cloud) {

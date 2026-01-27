@@ -6,6 +6,7 @@ export interface CloudCredentials {
   databaseUrl: string;
   anonKey: string;
   serviceRoleKey?: string;
+  region?: string;
 }
 
 export interface LocalCredentials {

@@ -14,6 +14,7 @@ import { scanEnvFiles } from '../core/env.js';
 import { detectFromEnv, resolveCredentials } from '../core/credentials.js';
 import { testConnection, isPooledUrl, checkPrerequisites } from '../db/connection.js';
 import { ensureLocalDb, findFreePort, connectionUrl } from '../docker/local-db.js';
+import { isSupabaseDirectUrl, toPoolerUrl, SUPABASE_REGIONS } from '../core/supabase-url.js';
 import { header, success, warn, error, info, sectionTitle, tableRow } from '../ui/format.js';
 import { confirmAction } from '../ui/prompts.js';
 
@@ -133,6 +134,35 @@ export async function initCommand(): Promise<void> {
     interactive: true,
   });
   console.log('');
+
+  // 5b. Convert Supabase direct URLs to session-mode pooler URLs.
+  // Supabase direct DB hosts (db.XXX.supabase.co) are IPv6-only, which
+  // Docker containers on macOS/Windows cannot reach. The session-mode pooler
+  // (port 5432) has IPv4 and works identically with pg_dump/psql.
+  if (resolved.cloud && isSupabaseDirectUrl(resolved.cloud.databaseUrl)) {
+    console.log(sectionTitle('Connection mode'));
+    console.log(info('Supabase direct connections use IPv6, which Docker cannot reach.'));
+    console.log(info('Using the Supabase connection pooler (session mode) instead.'));
+    console.log('');
+
+    const regionChoice = await select({
+      message: 'Which region is your Supabase project in?',
+      choices: SUPABASE_REGIONS.map((r) => ({
+        name: `${r.label} (${r.value})`,
+        value: r.value,
+      })),
+    });
+
+    const poolerUrl = toPoolerUrl(resolved.cloud.databaseUrl, regionChoice);
+    if (poolerUrl) {
+      resolved.cloud.databaseUrl = poolerUrl;
+      resolved.cloud.region = regionChoice;
+      console.log(success(`Using pooler URL for region ${regionChoice}`));
+    } else {
+      console.log(warn('Could not convert to pooler URL — using direct URL'));
+    }
+    console.log('');
+  }
 
   // 6. Set up local database
   let hasLocal = false;
