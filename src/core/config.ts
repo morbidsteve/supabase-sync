@@ -34,10 +34,19 @@ export interface SyncMetadata {
   files: number;
 }
 
+export interface DockerConfig {
+  managed: boolean;
+  containerName: string;
+  volumeName: string;
+  port: number;
+  image?: string;
+}
+
 export interface SyncConfig {
   version: number;
   cloud?: CloudCredentials;
   local?: LocalCredentials;
+  docker?: DockerConfig;
   storage?: {
     enabled: boolean;
     localS3?: S3Config;
