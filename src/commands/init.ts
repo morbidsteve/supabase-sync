@@ -14,7 +14,7 @@ import { scanEnvFiles } from '../core/env.js';
 import { detectFromEnv, resolveCredentials } from '../core/credentials.js';
 import { testConnection, isPooledUrl, checkPrerequisites } from '../db/connection.js';
 import { ensureLocalDb, findFreePort, connectionUrl } from '../docker/local-db.js';
-import { isSupabaseDirectUrl, toPoolerUrl, SUPABASE_REGIONS } from '../core/supabase-url.js';
+import { isSupabaseDirectUrl, toPoolerUrl, detectRegion, SUPABASE_REGIONS } from '../core/supabase-url.js';
 import { header, success, warn, error, info, sectionTitle, tableRow } from '../ui/format.js';
 import { confirmAction } from '../ui/prompts.js';
 
@@ -142,22 +142,30 @@ export async function initCommand(): Promise<void> {
   if (resolved.cloud && isSupabaseDirectUrl(resolved.cloud.databaseUrl)) {
     console.log(sectionTitle('Connection mode'));
     console.log(info('Supabase direct connections use IPv6, which Docker cannot reach.'));
-    console.log(info('Using the Supabase connection pooler (session mode) instead.'));
-    console.log('');
+    console.log(info('Auto-detecting project region for pooler connection...'));
 
-    const regionChoice = await select({
-      message: 'Which region is your Supabase project in?',
-      choices: SUPABASE_REGIONS.map((r) => ({
-        name: `${r.label} (${r.value})`,
-        value: r.value,
-      })),
-    });
+    const regionSpinner = ora('Detecting region...').start();
+    let region = await detectRegion(resolved.cloud.databaseUrl);
 
-    const poolerUrl = toPoolerUrl(resolved.cloud.databaseUrl, regionChoice);
+    if (region) {
+      regionSpinner.succeed(chalk.green(`Detected region: ${region}`));
+    } else {
+      regionSpinner.warn(chalk.yellow('Could not auto-detect region'));
+      // Fall back to asking
+      region = await select({
+        message: 'Which region is your Supabase project in?',
+        choices: SUPABASE_REGIONS.map((r) => ({
+          name: r,
+          value: r,
+        })),
+      });
+    }
+
+    const poolerUrl = toPoolerUrl(resolved.cloud.databaseUrl, region);
     if (poolerUrl) {
       resolved.cloud.databaseUrl = poolerUrl;
-      resolved.cloud.region = regionChoice;
-      console.log(success(`Using pooler URL for region ${regionChoice}`));
+      resolved.cloud.region = region;
+      console.log(success('Using session-mode pooler (IPv4)'));
     } else {
       console.log(warn('Could not convert to pooler URL — using direct URL'));
     }
