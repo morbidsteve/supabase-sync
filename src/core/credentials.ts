@@ -17,6 +17,16 @@ function isLocalUrl(url: string): boolean {
 }
 
 /**
+ * Derive a database URL template from a Supabase project URL.
+ * The user will still need to fill in the password.
+ */
+function deriveDbUrlFromProject(projectUrl: string): string | undefined {
+  const match = projectUrl.match(/https?:\/\/([a-z0-9]+)\.supabase\.co/);
+  if (!match) return undefined;
+  return `postgresql://postgres:[YOUR-PASSWORD]@db.${match[1]}.supabase.co:5432/postgres`;
+}
+
+/**
  * Auto-detect credentials from environment variables.
  * Checks common variable names used by Next.js, Vite, Expo, etc.
  */
@@ -55,6 +65,15 @@ export function detectFromEnv(envVars: Record<string, string>): {
     if (envVars[key]) {
       cloud.projectUrl = envVars[key];
       break;
+    }
+  }
+
+  // Derive project URL from database URL if not found directly
+  // Database URLs look like: postgresql://postgres:pass@db.PROJECTREF.supabase.co:5432/postgres
+  if (!cloud.projectUrl && cloud.databaseUrl) {
+    const refMatch = cloud.databaseUrl.match(/@db\.([a-z0-9]+)\.supabase\.co/);
+    if (refMatch) {
+      cloud.projectUrl = `https://${refMatch[1]}.supabase.co`;
     }
   }
 
@@ -115,13 +134,18 @@ export async function resolveCredentials(options?: {
           message: 'Supabase Project URL (e.g. https://xxxxx.supabase.co):',
           validate: (val) => val.includes('supabase.co') || val.includes('supabase.com') || 'Must be a Supabase URL',
         });
+      } else {
+        console.log(chalk.dim(`  Project URL: ${cloud.projectUrl} (auto-detected)`));
       }
 
       if (!cloud.databaseUrl) {
         cloud.databaseUrl = await input({
           message: 'Cloud database URL (direct connection, port 5432):',
+          default: cloud.projectUrl ? deriveDbUrlFromProject(cloud.projectUrl) : undefined,
           validate: (val) => val.startsWith('postgresql://') || val.startsWith('postgres://') || 'Must be a PostgreSQL connection URL',
         });
+      } else {
+        console.log(chalk.dim(`  Database URL: detected from environment`));
       }
 
       if (!cloud.anonKey) {
