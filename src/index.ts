@@ -5,6 +5,7 @@ import chalk from 'chalk';
 import { initCommand } from './commands/init.js';
 import { statusCommand } from './commands/status.js';
 import { previewCommand } from './commands/preview.js';
+import { pullCommand } from './commands/pull.js';
 
 const program = new Command();
 
@@ -24,8 +25,8 @@ program
   .command('pull')
   .description('Pull cloud data to local database')
   .option('-y, --yes', 'Skip confirmation prompt')
-  .action(async () => {
-    console.log(chalk.dim('  pull not yet implemented'));
+  .action(async (opts) => {
+    await pullCommand({ yes: opts.yes });
   });
 
 program
@@ -91,7 +92,7 @@ async function interactiveMenu() {
         await initCommand();
         break;
       case 'pull':
-        console.log(chalk.dim('  pull not yet implemented'));
+        await pullCommand();
         break;
       case 'push':
         console.log(chalk.dim('  push not yet implemented'));
