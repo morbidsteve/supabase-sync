@@ -79,15 +79,18 @@ export async function initCommand(): Promise<void> {
   // 3. Check prerequisites
   console.log(sectionTitle('Checking prerequisites...'));
   const prereqs = await checkPrerequisites();
-  if (prereqs.psql) {
-    console.log(success('psql is available'));
+
+  if (prereqs.mode === 'native') {
+    console.log(success('psql (native)'));
+    console.log(success('pg_dump (native)'));
+  } else if (prereqs.mode === 'docker') {
+    console.log(success('psql via Docker'));
+    console.log(success('pg_dump via Docker'));
   } else {
-    console.log(warn('psql not found — you will need it for sync operations'));
-  }
-  if (prereqs.pgDump) {
-    console.log(success('pg_dump is available'));
-  } else {
-    console.log(warn('pg_dump not found — you will need it for sync operations'));
+    console.log(error('Neither psql/pg_dump nor Docker found.'));
+    console.log(info('Install Docker (https://docker.com) or PostgreSQL client tools to continue.'));
+    console.log('');
+    return;
   }
   console.log('');
 
@@ -202,7 +205,7 @@ export async function initCommand(): Promise<void> {
   console.log(tableRow('Config file', '.supabase-sync.json'));
   console.log(tableRow('Cloud DB', resolved.cloud ? 'configured' : 'not configured'));
   console.log(tableRow('Local DB', hasLocal ? 'configured' : 'not configured'));
-  console.log(tableRow('Prerequisites', prereqs.psql && prereqs.pgDump ? 'all found' : 'some missing'));
+  console.log(tableRow('Execution mode', prereqs.mode === 'native' ? 'native (psql/pg_dump)' : 'Docker'));
   console.log('');
   console.log(info('Next steps:'));
   if (!hasLocal) {
