@@ -60,7 +60,7 @@ function printStorageSummary(summary: StorageSummary): void {
 /**
  * Status command — show connection info, table counts, storage summary, and last sync metadata.
  */
-export async function statusCommand(): Promise<void> {
+export async function statusCommand(options?: { projectId?: string }): Promise<void> {
   // 1. Check for config
   if (!configExists()) {
     console.log(header('Supabase Sync — Status'));

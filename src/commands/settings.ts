@@ -419,7 +419,7 @@ type SettingsAction =
   | 'clear_cloud'
   | 'back';
 
-export async function settingsCommand(): Promise<void> {
+export async function settingsCommand(options?: { projectId?: string }): Promise<void> {
   // 1. Check for config
   if (!configExists()) {
     console.log(header('Supabase Sync — Settings'));

@@ -59,7 +59,7 @@ function printStorageTransferSummary(summary: StorageSummary, direction: string)
 /**
  * Preview command — dry run showing what a pull or push would do.
  */
-export async function previewCommand(): Promise<void> {
+export async function previewCommand(options?: { projectId?: string }): Promise<void> {
   // 1. Check for config
   if (!configExists()) {
     console.log(header('Supabase Sync — Preview'));

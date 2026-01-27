@@ -23,7 +23,7 @@ function maskUrl(url: string): string {
  * Pull command — dump cloud database and restore to local,
  * then sync storage files.
  */
-export async function pullCommand(options?: { yes?: boolean }): Promise<void> {
+export async function pullCommand(options?: { yes?: boolean; projectId?: string }): Promise<void> {
   // 1. Config check
   if (!configExists()) {
     console.log(header('Supabase Sync — Pull'));

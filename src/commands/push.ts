@@ -23,7 +23,7 @@ function maskUrl(url: string): string {
  * Push command — dump local database and restore to cloud,
  * then sync storage files.
  */
-export async function pushCommand(options?: { yes?: boolean }): Promise<void> {
+export async function pushCommand(options?: { yes?: boolean; projectId?: string }): Promise<void> {
   // 1. Config check
   if (!configExists()) {
     console.log(header('Supabase Sync — Push'));
