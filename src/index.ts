@@ -2,6 +2,7 @@
 import { Command } from 'commander';
 import { select } from '@inquirer/prompts';
 import chalk from 'chalk';
+import { initCommand } from './commands/init.js';
 
 const program = new Command();
 
@@ -14,7 +15,7 @@ program
   .command('init')
   .description('Initialize configuration in current directory')
   .action(async () => {
-    console.log(chalk.dim('  init not yet implemented'));
+    await initCommand();
   });
 
 program
@@ -73,6 +74,7 @@ async function interactiveMenu() {
     const action = await select({
       message: 'What would you like to do?',
       choices: [
+        { name: 'Init              Set up configuration', value: 'init' },
         { name: 'Pull to Local     Download cloud data to local', value: 'pull' },
         { name: 'Push to Cloud     Upload local data to cloud', value: 'push' },
         { name: 'Preview           Dry run (no changes)', value: 'preview' },
@@ -83,6 +85,9 @@ async function interactiveMenu() {
     });
 
     switch (action) {
+      case 'init':
+        await initCommand();
+        break;
       case 'pull':
         console.log(chalk.dim('  pull not yet implemented'));
         break;
