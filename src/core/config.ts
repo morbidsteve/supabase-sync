@@ -91,8 +91,16 @@ export function defaultConfig(): SyncConfig {
   return {
     version: 1,
     sync: {
-      schemas: ['public'],
-      excludeTables: ['_prisma_migrations', 'schema_migrations'],
+      schemas: ['public', 'auth', 'storage'],
+      excludeTables: [
+        '_prisma_migrations',
+        'schema_migrations',
+        // Supabase-internal auth tables that should not be restored
+        'auth.schema_migrations',
+        'auth.instances',
+        'auth.flow_state',
+        'auth.audit_log_entries',
+      ],
       dumpOptions: ['--clean', '--if-exists', '--no-owner', '--no-privileges'],
     },
   };

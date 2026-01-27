@@ -241,6 +241,10 @@ export async function initCommand(): Promise<void> {
   console.log(tableRow('Cloud DB', resolved.cloud ? 'configured' : 'not configured'));
   console.log(tableRow('Local DB', hasLocal ? 'configured' : 'not configured'));
   console.log(tableRow('Execution mode', prereqs.mode === 'native' ? 'native (psql/pg_dump)' : 'Docker'));
+  console.log(tableRow('Schemas', config.sync.schemas.join(', ')));
+  console.log('');
+  console.log(info('Sync includes: schema + data + RLS policies + auth users + storage metadata'));
+  console.log(info('Edge Functions are not included (keep them in version control)'));
   console.log('');
   console.log(info('Next steps:'));
   if (!hasLocal) {
