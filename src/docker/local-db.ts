@@ -7,10 +7,10 @@ export interface DockerDbConfig {
   containerName: string;
   volumeName: string;
   port: number;
-  image?: string;  // default 'postgres:16-alpine'
+  image?: string;  // default 'postgres:17-alpine'
 }
 
-const DEFAULT_IMAGE = 'postgres:16-alpine';
+const DEFAULT_IMAGE = 'postgres:17-alpine';
 const MAX_WAIT_MS = 30_000;
 const POLL_INTERVAL_MS = 1_000;
 

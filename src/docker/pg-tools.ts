@@ -3,7 +3,7 @@ import { dirname, basename } from 'path';
 import { isDockerAvailable, resolveHostForDocker, getDockerNetworkArgs } from './docker-check.js';
 import { isSupabaseDirectUrl } from '../core/supabase-url.js';
 
-const DOCKER_IMAGE = 'postgres:16-alpine';
+const DOCKER_IMAGE = 'postgres:17-alpine';
 
 export type ExecutionMode = 'native' | 'docker';
 
