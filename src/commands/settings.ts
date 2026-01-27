@@ -10,6 +10,7 @@ import {
   type LocalCredentials,
   type S3Config,
 } from '../core/config.js';
+import { ensureLocalDb, stopLocalDb, removeLocalDb, getLocalDbStatus } from '../docker/local-db.js';
 import { testConnection } from '../db/connection.js';
 import { header, success, warn, error, info, sectionTitle, tableRow } from '../ui/format.js';
 import { confirmDestructive } from '../ui/prompts.js';
@@ -55,8 +56,10 @@ function printConfigSummary(config: SyncConfig): void {
     console.log(tableRow('Cloud', chalk.dim('not configured')));
   }
 
-  // Local
-  if (config.local) {
+  // Local / Docker
+  if (config.docker?.managed) {
+    console.log(tableRow('Local DB', `Docker (${config.docker.containerName}, port ${config.docker.port})`));
+  } else if (config.local) {
     console.log(tableRow('Local DB', config.local.databaseUrl));
   } else {
     console.log(tableRow('Local DB', chalk.dim('not configured')));
@@ -319,6 +322,72 @@ async function testConnections(config: SyncConfig): Promise<void> {
   }
 }
 
+async function manageDockerDb(config: SyncConfig): Promise<void> {
+  if (!config.docker?.managed) {
+    console.log(info('No Docker-managed database configured.'));
+    console.log(info('Run `supabase-sync init` and choose "Docker-managed database" to set one up.'));
+    return;
+  }
+
+  const status = await getLocalDbStatus(config.docker.containerName);
+  console.log(sectionTitle('Docker Database'));
+  console.log(tableRow('Container', config.docker.containerName));
+  console.log(tableRow('Volume', config.docker.volumeName));
+  console.log(tableRow('Port', String(config.docker.port)));
+  console.log(tableRow('Status', status.running ? chalk.green('running') : status.exists ? chalk.yellow('stopped') : chalk.dim('not created')));
+  console.log('');
+
+  type DockerAction = 'start' | 'stop' | 'remove' | 'back';
+  const action = await select<DockerAction>({
+    message: 'Docker database action:',
+    choices: [
+      { name: status.running ? 'Restart container' : 'Start container', value: 'start' },
+      { name: 'Stop container', value: 'stop' },
+      { name: 'Remove container and data', value: 'remove' },
+      { name: 'Back', value: 'back' },
+    ],
+  });
+
+  if (action === 'back') return;
+
+  if (action === 'start') {
+    const spinner = ora('Starting local database...').start();
+    try {
+      const url = await ensureLocalDb(config.docker);
+      config.local = { databaseUrl: url };
+      saveConfig(config);
+      spinner.succeed(chalk.green(`Local database running on port ${config.docker.port}`));
+    } catch (err) {
+      spinner.fail(chalk.red('Failed to start local database'));
+      console.log(info(String(err)));
+    }
+  } else if (action === 'stop') {
+    const spinner = ora('Stopping local database...').start();
+    try {
+      await stopLocalDb(config.docker.containerName);
+      spinner.succeed(chalk.green('Local database stopped'));
+    } catch (err) {
+      spinner.fail(chalk.red('Failed to stop local database'));
+      console.log(info(String(err)));
+    }
+  } else if (action === 'remove') {
+    const confirmed = await confirmDestructive('Remove Docker database container and all data?');
+    if (confirmed) {
+      const spinner = ora('Removing local database...').start();
+      try {
+        await removeLocalDb(config.docker.containerName, config.docker.volumeName);
+        delete config.docker;
+        delete config.local;
+        saveConfig(config);
+        spinner.succeed(chalk.green('Docker database removed'));
+      } catch (err) {
+        spinner.fail(chalk.red('Failed to remove local database'));
+        console.log(info(String(err)));
+      }
+    }
+  }
+}
+
 async function clearCloudCredentials(config: SyncConfig): Promise<void> {
   if (!config.cloud) {
     console.log(info('Cloud credentials are not configured — nothing to clear.'));
@@ -343,6 +412,7 @@ async function clearCloudCredentials(config: SyncConfig): Promise<void> {
 type SettingsAction =
   | 'update_cloud'
   | 'update_local'
+  | 'manage_docker'
   | 'configure_storage'
   | 'edit_sync'
   | 'test_connections'
@@ -374,6 +444,7 @@ export async function settingsCommand(): Promise<void> {
       choices: [
         { name: 'Update cloud credentials', value: 'update_cloud' },
         { name: 'Update local credentials', value: 'update_local' },
+        { name: 'Manage Docker database', value: 'manage_docker' },
         { name: 'Configure storage', value: 'configure_storage' },
         { name: 'Edit sync options', value: 'edit_sync' },
         { name: 'Test connections', value: 'test_connections' },
@@ -394,6 +465,9 @@ export async function settingsCommand(): Promise<void> {
         break;
       case 'update_local':
         await updateLocalCredentials(config);
+        break;
+      case 'manage_docker':
+        await manageDockerDb(config);
         break;
       case 'configure_storage':
         await configureStorage(config);

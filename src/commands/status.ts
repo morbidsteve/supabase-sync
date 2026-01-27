@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import ora from 'ora';
 import { configExists, loadConfig } from '../core/config.js';
+import { ensureLocalDb, getLocalDbStatus } from '../docker/local-db.js';
 import { testConnection } from '../db/connection.js';
 import { getTableCounts, type TableInfo } from '../db/discovery.js';
 import { getSupabaseStorageSummary, type StorageSummary } from '../storage/supabase.js';
@@ -74,8 +75,8 @@ export async function statusCommand(): Promise<void> {
 
   // 2. Header
   const hasCloud = !!config.cloud;
-  const hasLocal = !!config.local;
-  const mode = hasCloud && hasLocal ? 'Cloud + Local' : hasCloud ? 'Cloud only' : 'Local only';
+  const initialHasLocal = !!config.local || !!config.docker?.managed;
+  const mode = hasCloud && initialHasLocal ? 'Cloud + Local' : hasCloud ? 'Cloud only' : 'Local only';
   console.log(header('Supabase Sync — Status'));
   console.log(info(`Mode: ${mode}`));
   console.log('');
@@ -142,7 +143,35 @@ export async function statusCommand(): Promise<void> {
     console.log('');
   }
 
-  // 4. Local section
+  // 4. Docker Database section
+  if (config.docker?.managed) {
+    console.log(sectionTitle('Docker Database'));
+    const dbStatus = await getLocalDbStatus(config.docker.containerName);
+    console.log(tableRow('Container', config.docker.containerName));
+    console.log(tableRow('Status', dbStatus.running ? chalk.green('running') : dbStatus.exists ? chalk.yellow('stopped') : chalk.dim('not created')));
+    if (dbStatus.port) {
+      console.log(tableRow('Port', String(dbStatus.port)));
+    }
+
+    // Auto-start if not running
+    if (!dbStatus.running) {
+      const startSpinner = ora('Starting local database...').start();
+      try {
+        const url = await ensureLocalDb(config.docker);
+        config.local = { databaseUrl: url };
+        startSpinner.succeed(chalk.green('Local database started'));
+      } catch (err) {
+        startSpinner.fail(chalk.red('Failed to start local database'));
+        console.log(info(String(err)));
+      }
+    } else if (!config.local) {
+      config.local = { databaseUrl: `postgresql://postgres:postgres@localhost:${dbStatus.port}/postgres` };
+    }
+    console.log('');
+  }
+
+  // 5. Local section
+  const hasLocal = !!config.local;
   if (hasLocal) {
     console.log(sectionTitle('Local Database'));
 
