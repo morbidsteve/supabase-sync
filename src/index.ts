@@ -3,6 +3,8 @@ import { Command } from 'commander';
 import { select } from '@inquirer/prompts';
 import chalk from 'chalk';
 import { initCommand } from './commands/init.js';
+import { statusCommand } from './commands/status.js';
+import { previewCommand } from './commands/preview.js';
 
 const program = new Command();
 
@@ -38,14 +40,14 @@ program
   .command('preview')
   .description('Preview what would be synced (dry run)')
   .action(async () => {
-    console.log(chalk.dim('  preview not yet implemented'));
+    await previewCommand();
   });
 
 program
   .command('status')
   .description('Check connections and data summary')
   .action(async () => {
-    console.log(chalk.dim('  status not yet implemented'));
+    await statusCommand();
   });
 
 program
@@ -95,10 +97,10 @@ async function interactiveMenu() {
         console.log(chalk.dim('  push not yet implemented'));
         break;
       case 'preview':
-        console.log(chalk.dim('  preview not yet implemented'));
+        await previewCommand();
         break;
       case 'status':
-        console.log(chalk.dim('  status not yet implemented'));
+        await statusCommand();
         break;
       case 'settings':
         console.log(chalk.dim('  settings not yet implemented'));
