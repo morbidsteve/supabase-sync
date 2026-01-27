@@ -1,4 +1,5 @@
-import { execa } from 'execa';
+import { execPsql, execPgDumpVersion, getExecutionMode } from '../docker/pg-tools.js';
+import { isDockerAvailable } from '../docker/docker-check.js';
 
 export interface ConnectionInfo {
   connected: boolean;
@@ -11,13 +12,13 @@ export interface ConnectionInfo {
  */
 export async function testConnection(connectionUrl: string): Promise<ConnectionInfo> {
   try {
-    const result = await execa('psql', [
+    const result = await execPsql([
       connectionUrl,
       '--tuples-only',
       '--no-align',
       '-c', 'SELECT version();',
     ]);
-    const version = result.stdout.trim().split(',')[0] || 'unknown';
+    const version = (result.stdout as string).trim().split(',')[0] || 'unknown';
     return { connected: true, version };
   } catch (err) {
     return { connected: false, error: String(err) };
@@ -36,23 +37,35 @@ export function isPooledUrl(url: string): boolean {
  * Warn if pg_dump version is older than the remote server.
  */
 export async function checkPgDumpVersion(): Promise<string | null> {
-  try {
-    const result = await execa('pg_dump', ['--version']);
-    // Output like: pg_dump (PostgreSQL) 16.1
-    const match = result.stdout.match(/(\d+\.\d+)/);
-    return match ? match[1] : null;
-  } catch {
-    return null;
-  }
+  return execPgDumpVersion();
 }
 
 /**
- * Check if psql and pg_dump are available on PATH.
+ * Check if psql and pg_dump are available (natively or via Docker).
  */
-export async function checkPrerequisites(): Promise<{ psql: boolean; pgDump: boolean }> {
-  const [psqlResult, pgDumpResult] = await Promise.all([
-    execa('which', ['psql']).then(() => true).catch(() => false),
-    execa('which', ['pg_dump']).then(() => true).catch(() => false),
-  ]);
-  return { psql: psqlResult, pgDump: pgDumpResult };
+export async function checkPrerequisites(): Promise<{
+  mode: 'native' | 'docker' | 'none';
+  psql: boolean;
+  pgDump: boolean;
+  dockerAvailable: boolean;
+}> {
+  try {
+    const mode = await getExecutionMode();
+    const dockerAvailable = mode === 'docker' ? true : await isDockerAvailable();
+    return {
+      mode,
+      psql: true,
+      pgDump: true,
+      dockerAvailable,
+    };
+  } catch {
+    // Neither native tools nor Docker available
+    const dockerAvailable = await isDockerAvailable();
+    return {
+      mode: 'none',
+      psql: false,
+      pgDump: false,
+      dockerAvailable,
+    };
+  }
 }

@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import { execPgDump } from '../docker/pg-tools.js';
 import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { getSnapshotDir } from '../core/config.js';
@@ -43,7 +43,7 @@ export async function dumpDatabase(
     args.push('--exclude-table', table);
   }
 
-  await execa('pg_dump', args);
+  await execPgDump(args);
 
   return dumpPath;
 }

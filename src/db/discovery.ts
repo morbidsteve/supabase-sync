@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import { execPsql } from '../docker/pg-tools.js';
 
 export interface TableInfo {
   schema: string;
@@ -31,7 +31,7 @@ export async function discoverTables(
   `;
 
   try {
-    const result = await execa('psql', [
+    const result = await execPsql([
       connectionUrl,
       '--tuples-only',
       '--no-align',
@@ -40,7 +40,7 @@ export async function discoverTables(
     ]);
 
     const tables: TableInfo[] = [];
-    for (const line of result.stdout.trim().split('\n')) {
+    for (const line of (result.stdout as string).trim().split('\n')) {
       if (!line.trim()) continue;
       const [schema, name] = line.split('|');
       if (schema && name) {
@@ -76,7 +76,7 @@ export async function getTableCounts(
   `;
 
   try {
-    const result = await execa('psql', [
+    const result = await execPsql([
       connectionUrl,
       '--tuples-only',
       '--no-align',
@@ -85,7 +85,7 @@ export async function getTableCounts(
     ]);
 
     const tables: TableInfo[] = [];
-    for (const line of result.stdout.trim().split('\n')) {
+    for (const line of (result.stdout as string).trim().split('\n')) {
       if (!line.trim()) continue;
       const parts = line.split('|');
       if (parts.length >= 3) {
@@ -112,13 +112,13 @@ export async function getExactRowCount(
   table: string,
 ): Promise<number> {
   try {
-    const result = await execa('psql', [
+    const result = await execPsql([
       connectionUrl,
       '--tuples-only',
       '--no-align',
       '-c', `SELECT count(*) FROM "${schema}"."${table}";`,
     ]);
-    return parseInt(result.stdout.trim(), 10) || 0;
+    return parseInt((result.stdout as string).trim(), 10) || 0;
   } catch {
     return 0;
   }

@@ -1,4 +1,4 @@
-import { execa } from 'execa';
+import { execPsql } from '../docker/pg-tools.js';
 import { existsSync } from 'fs';
 import { getDumpPath } from './dump.js';
 
@@ -12,7 +12,7 @@ export async function restoreDatabase(connectionUrl: string): Promise<void> {
     throw new Error(`No dump file found at ${dumpPath}`);
   }
 
-  await execa('psql', [
+  await execPsql([
     connectionUrl,
     '--single-transaction',
     '--file', dumpPath,
