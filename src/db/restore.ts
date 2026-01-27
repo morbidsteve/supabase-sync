@@ -4,7 +4,13 @@ import { getDumpPath } from './dump.js';
 
 /**
  * Restore a SQL dump to a PostgreSQL database.
- * Uses psql with --single-transaction for atomicity.
+ *
+ * We intentionally do NOT use --single-transaction because Supabase dumps
+ * include cross-schema FK constraints (e.g. auth.saml_relay_states ->
+ * auth.flow_state) where the referenced table may be excluded. Those FK
+ * errors are harmless, but --single-transaction would roll back the
+ * entire restore on the first one.
+ *
  * If dumpPath is not provided, uses the default snapshot directory.
  */
 export async function restoreDatabase(connectionUrl: string, dumpPath?: string): Promise<void> {
@@ -15,10 +21,9 @@ export async function restoreDatabase(connectionUrl: string, dumpPath?: string):
 
   await execPsql([
     connectionUrl,
-    '--single-transaction',
     '--file', filePath,
   ], {
-    // psql emits notices about DROP IF EXISTS — these are harmless
+    // psql emits notices and non-fatal FK errors for excluded tables — harmless
     reject: false,
   });
 }
