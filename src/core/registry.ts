@@ -1,4 +1,4 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync, readdirSync, copyFileSync } from 'fs';
 import { join } from 'path';
 import { homedir } from 'os';
 import type { CloudCredentials, LocalCredentials, S3Config, SyncOptions, SyncMetadata, DockerConfig } from './config.js';
@@ -134,6 +134,60 @@ export function setDefaultProject(id: string): void {
   }
   registry.defaultProject = id;
   saveRegistry(registry);
+}
+
+/**
+ * Migrate a legacy per-directory .supabase-sync.json config into the global registry.
+ * Returns the new ProjectEntry, or null if no legacy config exists.
+ */
+export function migrateLegacyConfig(cwd: string, projectName: string): ProjectEntry | null {
+  const legacyConfigPath = join(cwd, '.supabase-sync.json');
+  if (!existsSync(legacyConfigPath)) return null;
+
+  try {
+    const raw = readFileSync(legacyConfigPath, 'utf-8');
+    const legacy = JSON.parse(raw);
+    const id = slugify(projectName);
+    const now = new Date().toISOString();
+
+    const entry: ProjectEntry = {
+      id,
+      name: projectName,
+      cloud: legacy.cloud,
+      local: legacy.local,
+      docker: legacy.docker,
+      storage: legacy.storage,
+      sync: legacy.sync ?? {
+        schemas: ['public'],
+        excludeTables: [],
+        dumpOptions: ['--clean', '--if-exists', '--no-owner', '--no-privileges'],
+      },
+      lastSync: legacy.lastSync,
+      createdAt: now,
+      updatedAt: now,
+    };
+
+    addProject(entry);
+
+    // Copy snapshot data if it exists
+    const legacySnapshotDir = join(cwd, '.supabase-sync');
+    const newSnapshotDir = getProjectSnapshotDir(id);
+    if (existsSync(legacySnapshotDir)) {
+      try {
+        for (const file of readdirSync(legacySnapshotDir)) {
+          const srcPath = join(legacySnapshotDir, file);
+          const destPath = join(newSnapshotDir, file);
+          copyFileSync(srcPath, destPath);
+        }
+      } catch {
+        // Non-critical: snapshot copy failure
+      }
+    }
+
+    return entry;
+  } catch {
+    return null;
+  }
 }
 
 /**
