@@ -7,6 +7,7 @@ import { statusCommand } from './commands/status.js';
 import { previewCommand } from './commands/preview.js';
 import { pullCommand } from './commands/pull.js';
 import { pushCommand } from './commands/push.js';
+import { settingsCommand } from './commands/settings.js';
 
 const program = new Command();
 
@@ -56,7 +57,7 @@ program
   .command('settings')
   .description('Configure credentials and sync options')
   .action(async () => {
-    console.log(chalk.dim('  settings not yet implemented'));
+    await settingsCommand();
   });
 
 // If no subcommand given, show interactive menu
@@ -105,7 +106,7 @@ async function interactiveMenu() {
         await statusCommand();
         break;
       case 'settings':
-        console.log(chalk.dim('  settings not yet implemented'));
+        await settingsCommand();
         break;
       case 'exit':
         console.log(chalk.dim('\nGoodbye!\n'));
