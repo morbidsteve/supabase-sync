@@ -3,8 +3,8 @@ import { getSnapshotDir, type CloudCredentials, type S3Config } from '../core/co
 import { downloadSupabaseStorage, uploadToSupabaseStorage } from './supabase.js';
 import { uploadToS3, downloadFromS3 } from './s3.js';
 
-function getStorageSnapshotDir(): string {
-  return join(getSnapshotDir(), 'storage');
+function getStorageSnapshotDir(baseDir?: string): string {
+  return join(baseDir ?? getSnapshotDir(), 'storage');
 }
 
 /**
@@ -14,15 +14,16 @@ function getStorageSnapshotDir(): string {
 export async function pullStorage(
   cloudCreds: CloudCredentials,
   localS3Config?: S3Config,
+  storageDir?: string,
 ): Promise<number> {
-  const snapshotDir = getStorageSnapshotDir();
+  const dir = storageDir ?? getStorageSnapshotDir();
 
   // Download from Supabase to snapshot
-  const fileCount = await downloadSupabaseStorage(cloudCreds, snapshotDir);
+  const fileCount = await downloadSupabaseStorage(cloudCreds, dir);
 
   // Optionally upload to local S3
   if (localS3Config && fileCount > 0) {
-    await uploadToS3(localS3Config, snapshotDir);
+    await uploadToS3(localS3Config, dir);
   }
 
   return fileCount;
@@ -35,16 +36,17 @@ export async function pullStorage(
 export async function pushStorage(
   cloudCreds: CloudCredentials,
   localS3Config?: S3Config,
+  storageDir?: string,
 ): Promise<number> {
-  const snapshotDir = getStorageSnapshotDir();
+  const dir = storageDir ?? getStorageSnapshotDir();
 
   // If local S3 is configured, download latest files to snapshot first
   if (localS3Config) {
-    await downloadFromS3(localS3Config, snapshotDir);
+    await downloadFromS3(localS3Config, dir);
   }
 
   // Upload from snapshot to Supabase
-  const fileCount = await uploadToSupabaseStorage(cloudCreds, snapshotDir);
+  const fileCount = await uploadToSupabaseStorage(cloudCreds, dir);
 
   return fileCount;
 }

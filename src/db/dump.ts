@@ -3,28 +3,32 @@ import { existsSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import { getSnapshotDir } from '../core/config.js';
 
-export function getDumpPath(): string {
-  return join(getSnapshotDir(), 'dump.sql');
-}
-
 export interface DumpOptions {
   schemas: string[];
   excludeTables: string[];
   dumpFlags: string[];
+  snapshotDir?: string;
 }
 
 /**
- * Dump a PostgreSQL database to .supabase-sync/dump.sql.
+ * Get the dump file path for a given snapshot directory.
+ */
+export function getDumpPath(snapshotDir?: string): string {
+  return join(snapshotDir ?? getSnapshotDir(), 'dump.sql');
+}
+
+/**
+ * Dump a PostgreSQL database to a dump.sql file.
  * Uses pg_dump with configurable schema filters and flags.
  */
 export async function dumpDatabase(
   connectionUrl: string,
   options: DumpOptions,
 ): Promise<string> {
-  const snapshotDir = getSnapshotDir();
-  if (!existsSync(snapshotDir)) mkdirSync(snapshotDir, { recursive: true });
+  const dir = options.snapshotDir ?? getSnapshotDir();
+  if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
-  const dumpPath = getDumpPath();
+  const dumpPath = getDumpPath(dir);
 
   const args: string[] = [
     connectionUrl,
