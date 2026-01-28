@@ -2,6 +2,7 @@ import { Box, Text, useApp } from 'ink';
 import { useNavigation } from './hooks/useNavigation.js';
 import { Layout } from './components/Layout.js';
 import { MenuScreen } from './screens/MenuScreen.js';
+import { StatusScreen } from './screens/StatusScreen.js';
 import { getDefaultProject } from '../core/registry.js';
 import type { Screen } from './types.js';
 
@@ -25,7 +26,7 @@ export function App() {
       case 'menu':
         return <MenuScreen navigate={nav.navigate} />;
       case 'status':
-        return <Text>Status screen - press Escape to go back</Text>;
+        return <StatusScreen onBack={nav.goBack} />;
       case 'pull':
         return <Text>Pull screen - press Escape to go back</Text>;
       case 'push':
