@@ -2,6 +2,10 @@
 
 CLI tool to sync data between Supabase cloud and local Postgres databases. Pull your cloud database to a local Docker-managed Postgres for development or archiving, and push it back when you're ready. No host PostgreSQL installation required — everything runs in Docker.
 
+<p align="center">
+  <img src="demo.gif" alt="supabase-sync demo" width="720">
+</p>
+
 ## Features
 
 - **Pull** cloud data to a local database
