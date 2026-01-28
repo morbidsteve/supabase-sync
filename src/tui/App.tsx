@@ -5,6 +5,7 @@ import { MenuScreen } from './screens/MenuScreen.js';
 import { StatusScreen } from './screens/StatusScreen.js';
 import { PullScreen } from './screens/PullScreen.js';
 import { PushScreen } from './screens/PushScreen.js';
+import { PreviewScreen } from './screens/PreviewScreen.js';
 import { getDefaultProject } from '../core/registry.js';
 import type { Screen } from './types.js';
 
@@ -34,7 +35,7 @@ export function App() {
       case 'push':
         return <PushScreen onBack={nav.goBack} />;
       case 'preview':
-        return <Text>Preview screen - press Escape to go back</Text>;
+        return <PreviewScreen onBack={nav.goBack} />;
       case 'init':
         return <Text>Init screen - press Escape to go back</Text>;
       case 'settings':
