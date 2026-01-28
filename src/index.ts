@@ -67,12 +67,17 @@ program
     await settingsCommand({ projectId });
   });
 
-// If no subcommand given, show interactive menu
+// If no subcommand given, launch TUI
 if (process.argv.length <= 2) {
-  interactiveMenu().catch((err) => {
-    console.error(chalk.red('Fatal error:'), err);
-    process.exit(1);
-  });
+  const { render } = await import('ink');
+  const React = await import('react');
+  const { App } = await import('./tui/App.js');
+  // Enter alternate screen buffer (like vim/htop)
+  process.stdout.write('\x1b[?1049h');
+  const { waitUntilExit } = render(React.createElement(App));
+  await waitUntilExit();
+  // Restore normal screen
+  process.stdout.write('\x1b[?1049l');
 } else {
   program.parse();
 }
