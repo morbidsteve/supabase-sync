@@ -1,5 +1,28 @@
 # supabase-sync — Project Context
 
+## Session State (Last Updated: 2026-01-27)
+
+**Branch:** `main` — clean, up to date with `origin/main`
+**Latest commit:** `35c900f docs: Add CLAUDE.md with project context and roadmap`
+**Build status:** Compiles cleanly (`pnpm build`)
+**Globally linked:** `pnpm link --global` — `supabase-sync` available system-wide
+
+### What's Done
+All phases 1–4 are complete. The tool works end-to-end: init → pull → push → status → preview → settings, both in CLI mode and full-screen TUI mode. Demo GIF is in the README. Package metadata is ready for npm publish.
+
+### What To Do Next
+Pick up from **Phase 5: Security & Quality** (detailed below). Priority order:
+1. **5a** — Credential masking in error output (security bug)
+2. **5b** — Add tests with Vitest (zero tests exist)
+3. **5c** — GitHub Actions CI
+4. **5d** — npm publish
+
+### Pending User Requests (Not Yet Started)
+- **CircuitMap site performance** — User reported slow page loads on the CircuitMap Next.js app (`/Users/steven/programming/circuitmap`), likely caused by unoptimized Supabase database queries. Not yet investigated. The Supabase project is `gpkvobeechnkbgzioipb` (us-west-2). This is a separate project from supabase-sync.
+- **Social media promotion** — User expressed interest in promoting the supabase-sync repo on social media (Reddit r/supabase, r/selfhosted, Hacker News, Twitter/X, Dev.to, Product Hunt). No posts have been drafted or published yet.
+
+---
+
 ## What This Is
 
 A CLI tool for archiving and restoring Supabase projects to/from local Docker-managed Postgres databases. Solves the problem of Supabase's free tier limit (2 active projects) — archive a project locally, delete it from Supabase, and restore it later to a new project.
@@ -239,4 +262,36 @@ Re-record the asciinema demo with the actual full-screen TUI instead of the synt
 
 # Other Project: CircuitMap
 
-The CircuitMap Next.js app at `/Users/steven/programming/circuitmap` has a performance issue — slow page loads likely caused by unoptimized database queries. This is separate from supabase-sync but was mentioned. The Supabase project for CircuitMap is `gpkvobeechnkbgzioipb` (us-west-2).
+The CircuitMap Next.js app at `/Users/steven/programming/circuitmap` is a separate project — a multi-tenant SaaS for visualizing home electrical panel mappings. It has its own `CLAUDE.md` with full context.
+
+- **Supabase project:** `gpkvobeechnkbgzioipb` (us-west-2)
+- **Tech:** Next.js 14, TypeScript, Tailwind, Shadcn/ui, Supabase (auth + DB + storage)
+- **Config file:** `/Users/steven/programming/circuitmap/.supabase-sync.json` (used to test supabase-sync)
+- **Pending issue:** User reported slow page loads — every click takes a long time. Likely caused by unoptimized Supabase database queries (missing indexes, N+1 queries, or lack of caching). Not yet investigated — needs profiling to identify bottlenecks.
+
+---
+
+# Git Commit History (Key Milestones)
+
+```
+35c900f docs: Add CLAUDE.md with project context and roadmap
+25ec18f chore: Clean up old interactive menu code
+e9f84b4 feat: Add init wizard screen
+b0acc5b feat: Add settings screen
+6bb00d1 feat: Add preview screen
+71bcb3e feat: Add pull and push screens
+e52778a feat: Add full-screen status screen
+8dc8adf feat: Add full-screen menu screen
+0fa4266 feat: Add App shell with fullscreen alternate buffer
+cdcb85e feat: Add shared TUI components
+e9b35fc feat: Add TUI types and core hooks
+87dc257 feat: Add Ink/React dependencies for full-screen TUI
+9872dd2 feat: Add animated demo GIF to README
+6ce92c8 chore: Polish for public release
+9fcecbf fix: Remove --single-transaction from restore
+9a02f15 fix: Bump Docker image to postgres:17-alpine
+cec0546 fix: Add us-west-2 to region list, fixing auto-detection
+3a8e2e7 fix: Use Supabase session-mode pooler for Docker connectivity
+785c0d3 feat: include auth and storage schemas in default sync
+d99666c feat: auto-derive Supabase project URL from database URL
+```
