@@ -1,11 +1,33 @@
 {
   "name": "supabase-sync",
   "version": "0.1.0",
-  "description": "CLI tool to sync data between Supabase cloud and local Postgres",
+  "description": "CLI tool to sync data between Supabase cloud and local Postgres databases. Docker-first — no host PostgreSQL required.",
   "type": "module",
+  "license": "MIT",
+  "author": "Steven Katzman",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/morbidsteve/supabase-sync.git"
+  },
+  "keywords": [
+    "supabase",
+    "postgres",
+    "sync",
+    "backup",
+    "restore",
+    "docker",
+    "pg_dump",
+    "cli",
+    "database"
+  ],
   "bin": {
     "supabase-sync": "./dist/index.js"
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",

@@ -1,5 +1,6 @@
 import { execa, type Result } from 'execa';
 import { dirname, basename } from 'path';
+import chalk from 'chalk';
 import { isDockerAvailable, resolveHostForDocker, getDockerNetworkArgs } from './docker-check.js';
 import { isSupabaseDirectUrl } from '../core/supabase-url.js';
 
@@ -146,7 +147,7 @@ function prepareDockerArgs(args: string[]): DockerArgs {
   // The init command should have converted these to pooler URLs, but warn just in case.
   if (urlIndex !== -1 && isSupabaseDirectUrl(rewrittenArgs[urlIndex])) {
     console.error(
-      '\x1b[33m[warn]\x1b[0m Supabase direct URL detected (db.xxx.supabase.co). ' +
+      chalk.yellow('[warn]') + ' Supabase direct URL detected (db.xxx.supabase.co). ' +
       'These use IPv6 which Docker cannot reach. Run `supabase-sync init` to reconfigure with the pooler URL.',
     );
   }
