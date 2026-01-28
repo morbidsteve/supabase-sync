@@ -7,6 +7,7 @@ import { PullScreen } from './screens/PullScreen.js';
 import { PushScreen } from './screens/PushScreen.js';
 import { PreviewScreen } from './screens/PreviewScreen.js';
 import { SettingsScreen } from './screens/SettingsScreen.js';
+import { InitScreen } from './screens/InitScreen.js';
 import { getDefaultProject } from '../core/registry.js';
 import type { Screen } from './types.js';
 
@@ -38,7 +39,7 @@ export function App() {
       case 'preview':
         return <PreviewScreen onBack={nav.goBack} />;
       case 'init':
-        return <Text>Init screen - press Escape to go back</Text>;
+        return <InitScreen onBack={nav.goBack} />;
       case 'settings':
         return <SettingsScreen onBack={nav.goBack} />;
       default:
