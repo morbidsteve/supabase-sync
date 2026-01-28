@@ -3,6 +3,8 @@ import { useNavigation } from './hooks/useNavigation.js';
 import { Layout } from './components/Layout.js';
 import { MenuScreen } from './screens/MenuScreen.js';
 import { StatusScreen } from './screens/StatusScreen.js';
+import { PullScreen } from './screens/PullScreen.js';
+import { PushScreen } from './screens/PushScreen.js';
 import { getDefaultProject } from '../core/registry.js';
 import type { Screen } from './types.js';
 
@@ -28,9 +30,9 @@ export function App() {
       case 'status':
         return <StatusScreen onBack={nav.goBack} />;
       case 'pull':
-        return <Text>Pull screen - press Escape to go back</Text>;
+        return <PullScreen onBack={nav.goBack} />;
       case 'push':
-        return <Text>Push screen - press Escape to go back</Text>;
+        return <PushScreen onBack={nav.goBack} />;
       case 'preview':
         return <Text>Preview screen - press Escape to go back</Text>;
       case 'init':
