@@ -1,6 +1,8 @@
 import { Box, Text, useApp } from 'ink';
 import { useNavigation } from './hooks/useNavigation.js';
 import { Layout } from './components/Layout.js';
+import { MenuScreen } from './screens/MenuScreen.js';
+import { getDefaultProject } from '../core/registry.js';
 import type { Screen } from './types.js';
 
 const screenTitles: Record<Screen, string> = {
@@ -16,11 +18,12 @@ const screenTitles: Record<Screen, string> = {
 export function App() {
   const nav = useNavigation();
   const { exit } = useApp();
+  const defaultProject = getDefaultProject();
 
   const renderScreen = () => {
     switch (nav.current) {
       case 'menu':
-        return <Text>Menu screen placeholder - press q to quit</Text>;
+        return <MenuScreen navigate={nav.navigate} />;
       case 'status':
         return <Text>Status screen - press Escape to go back</Text>;
       case 'pull':
@@ -41,6 +44,7 @@ export function App() {
   return (
     <Layout
       title={screenTitles[nav.current]}
+      projectName={defaultProject?.name}
       onQuit={() => exit()}
       onBack={nav.goBack}
     >
